@@ -32,7 +32,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#include "mempool.h"
+#include <mempool.h>
 
 struct _TC {
     char *desc;

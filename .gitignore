@@ -1,3 +1,8 @@
-# binaries
+# Binaries
 a.out
 mempool
+tests
+
+# Library artefacts
+mempool.o
+libmempool.a
