@@ -33,9 +33,11 @@
 #include <stdlib.h>
 
 struct __mempool_t {
-    void *data;
+    void *next;
     uint64_t used;
     uint64_t space;
+    uint64_t index;
+    uint64_t slots;
 } typedef MEMPOOL;
 
 /*

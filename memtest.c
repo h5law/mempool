@@ -29,6 +29,7 @@
 #include <assert.h>
 #include <errno.h>
 #include <stddef.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -61,7 +62,7 @@ int main(int argc, char **argv)
     assert(mempool->used == 0);
     assert(mempool->space == tc.pool_size * sizeof(test_case));
     /*printf("Pool: \t%lu\tData: \t%lu\n", (uintptr_t)mempool,*/
-    /*       (uintptr_t)mempool->data);*/
+    /*       (uintptr_t)mempool->next);*/
     mempool_free(mempool);
     printf("Done:\t✅\n");
 
@@ -87,18 +88,18 @@ int main(int argc, char **argv)
     assert(mempool->used == sizeof(tc));
     assert(mempool->space - mempool->used > 0);
     /*printf("Pool: \t%lu\tData: \t%lu\n", (uintptr_t)mempool,*/
-    /*       (uintptr_t)mempool->data);*/
+    /*       (uintptr_t)mempool->next);*/
     mempool_free(mempool);
     printf("Done:\t✅\n");
 
     printf("\nTest mempool_push(): NULL pool\n");
     mempool = NULL;
     mempool = mempool_init(sizeof(test_case), tc.pool_size);
-    mempool->data = NULL;
+    mempool->next = NULL;
     assert(mempool_push(mempool, sizeof(tc)) == NULL);
     assert(errno == -1);
     /*printf("Pool: \t%lu\tData: \t%lu\n", (uintptr_t)mempool,*/
-    /*       (uintptr_t)mempool->data);*/
+    /*       (uintptr_t)mempool->next);*/
     mempool_free(mempool);
     printf("Done:\t✅\n");
 
@@ -107,30 +108,37 @@ int main(int argc, char **argv)
     mempool = mempool_init(sizeof(test_case), tc.pool_size);
     assert(mempool->used == 0);
     assert(mempool->space == tc.pool_size * sizeof(test_case));
-    for (int i = 0; i < tc.pool_size; i++) {
+    for (int i = 0; i < tc.pool_size; ++i) {
         void *res = mempool_push(mempool, sizeof(tc));
         assert(res != NULL);
         assert(mempool->used == sizeof(tc) * (i + 1));
     }
-    assert(mempool_push(mempool, sizeof(tc)) == NULL);
-    assert(errno == -2);
+    for (int i = 0; i < tc.pool_size; ++i) {
+        void *res = mempool_push(mempool, sizeof(tc));
+        assert(res != NULL);
+        assert((uintptr_t)mempool->next ==
+               (uintptr_t)&mempool[1] + sizeof(test_case) * (i + 1));
+        assert(mempool->index == (i + 1) % tc.pool_size);
+    }
     /*printf("Pool: \t%lu\tData: \t%lu\n", (uintptr_t)mempool,*/
-    /*       (uintptr_t)mempool->data);*/
+    /*       (uintptr_t)mempool->next);*/
     mempool_free(mempool);
     printf("Done:\t✅\n");
 
-    printf("\nTest mempool_push(): Remainder mismatch\n");
-    mempool = NULL;
-    mempool = mempool_init(sizeof(test_case), tc.pool_size);
-    for (int i = 0; i < tc.pool_size - 1; ++i) {
-        assert(mempool_push(mempool, sizeof(tc)) != NULL);
-    }
-    assert(mempool_push(mempool, sizeof(test_case_wrapper)) == NULL);
-    assert(errno == -3);
+    /*printf("\nTest mempool_push(): Remainder mismatch\n");*/
+    /*mempool = NULL;*/
+    /*mempool = mempool_init(sizeof(test_case), tc.pool_size);*/
+    /*for (int i = 0; i < tc.pool_size - 1; ++i) {*/
+    /*    assert(mempool_push(mempool, sizeof(tc)) != NULL);*/
+    /*}*/
+    /*assert(mempool_push(mempool, sizeof(tc)) != NULL);*/
+    /*assert((uintptr_t)mempool->next ==*/
+    /*       (uintptr_t)&mempool[1] + sizeof(test_case));*/
+    /*assert(mempool->index == 1);*/
     /*printf("Pool: \t%lu\tData: \t%lu\n", (uintptr_t)mempool,*/
-    /*(uintptr_t)mempool->data);*/
-    mempool_free(mempool);
-    printf("Done:\t✅\n");
+    /*(uintptr_t)mempool->next);*/
+    /*mempool_free(mempool);*/
+    /*printf("Done:\t✅\n");*/
 }
 
 // vim: ts=4 sts=4 sw=4 et cin

@@ -62,52 +62,52 @@ MEMPOOL *mempool_init(uint64_t item_size, uint64_t pool_size)
     /*printf("Pool: \t%lu\tData: \t%lu\n", (uintptr_t)pool,
      * (uintptr_t)&pool[1]);*/
 
-    pool->data = (MEMPOOL *)&pool[1]; // Pointer to rest of allocated memory
+    pool->next = (MEMPOOL *)&pool[1]; // Pointer to rest of allocated memory
     pool->used = 0;
     pool->space = total_size;
+    pool->slots = pool_size;
+    pool->index = 0;
 
     return pool;
 }
 
 void *mempool_push(MEMPOOL *pool, uint64_t item_size)
 {
-    if (pool == NULL || pool->data == NULL) {
+    if (pool == NULL || pool->next == NULL) {
         // Null pool or no space
         errno = -1;
         return NULL;
     }
-    if (pool->used >= pool->space) {
-        // Pool is full
-        errno = -2;
-        return NULL;
-    }
-    if (pool->used + item_size > pool->space) {
-        // Pool cant fit item
-        errno = -3;
-        return NULL;
-    }
-    size_t remaining_space = pool->space - pool->used;
-    if (remaining_space % item_size != 0) {
-        // Remaining space has incorrect size
-        errno = -4;
-        return NULL;
+
+    uintptr_t nextOffset;
+    if (pool->used >= pool->space || pool->used + item_size > pool->space) {
+        // Pool is full or cant fit item circle back to start
+        nextOffset = ((uintptr_t)pool + sizeof(MEMPOOL)) +
+                     (item_size * (pool->index + 1));
+    } else {
+        // Pool can fit at head add as norrmal
+        nextOffset = (uintptr_t)pool->next + item_size;
+        pool->used = pool->used + item_size;
     }
 
-    /*printf("Alloc: \t%lu\tSize: \t%llu\n", (uintptr_t)pool->data,
-     * pool->space);*/
+    /*size_t remaining_space = pool->space - pool->used;*/
+    /*if (remaining_space % item_size != 0) {*/
+    /*    // Remaining space has incorrect size*/
+    /*    errno = -4;*/
+    /*    return NULL;*/
+    /*}*/
 
-    pool->data += item_size;
-    pool->used += item_size;
+    /*printf("Alloc: \t%lu\tSize: \t%llu\tUsed: \t%llu\tIndex: \t%llu\n",*/
+    /*       (uintptr_t)nextOffset, pool->space, pool->used, pool->index);*/
 
-    return pool->data - item_size;
+    pool->next = (uintptr_t *)nextOffset;
+    pool->index = (pool->index + 1) % pool->slots;
+
+    return pool->next - item_size;
 }
 
 void mempool_free(MEMPOOL *pool)
 {
-    // Ensure pool is pointing to the start of the pool block
-    if (pool != NULL && pool->data != NULL)
-        assert((uintptr_t)pool ==
-               (uintptr_t)(pool->data - pool->used - sizeof(MEMPOOL)));
     free(pool); // Free entire allocated block
 }
 
