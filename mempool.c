@@ -59,7 +59,9 @@ MEMPOOL *mempool_init(uint64_t item_size, uint64_t pool_size)
         }
     }
 
-    printf("Pool: \t%lu\tData: \t%lu\n", (uintptr_t)pool, (uintptr_t)&pool[1]);
+    /*printf("Pool: \t%lu\tData: \t%lu\n", (uintptr_t)pool,
+     * (uintptr_t)&pool[1]);*/
+
     pool->data = (MEMPOOL *)&pool[1]; // Pointer to rest of allocated memory
     pool->used = 0;
     pool->space = total_size;
@@ -91,7 +93,8 @@ void *mempool_push(MEMPOOL *pool, uint64_t item_size)
         return NULL;
     }
 
-    printf("Alloc: \t%lu\tSize: \t%llu\n", (uintptr_t)pool->data, pool->space);
+    /*printf("Alloc: \t%lu\tSize: \t%llu\n", (uintptr_t)pool->data,
+     * pool->space);*/
 
     pool->data += item_size;
     pool->used += item_size;
@@ -101,14 +104,10 @@ void *mempool_push(MEMPOOL *pool, uint64_t item_size)
 
 void mempool_free(MEMPOOL *pool)
 {
-    /*pool->data =*/
-    /*        pool->data - ((pool->size * pool->chunk_size) +
-     * sizeof(MEMPOOL));*/
-    /*pool->data = pool->data - pool->used - sizeof(MEMPOOL);*/
-    /*printf("Freeing: \t%lu\tData: \t%lu\n", (uintptr_t)pool,
-     * (uintptr_t)pool->data);*/
-    /*free(pool->data);*/
-    printf("Free: \t%lu\n", (uintptr_t)pool);
+    // Ensure pool is pointing to the start of the pool block
+    if (pool != NULL && pool->data != NULL)
+        assert((uintptr_t)pool ==
+               (uintptr_t)(pool->data - pool->used - sizeof(MEMPOOL)));
     free(pool); // Free entire allocated block
 }
 
