@@ -41,7 +41,8 @@ MEMPOOL *mempool_init(uint64_t item_size, uint64_t pool_size)
     size_t total_size;
 
     total_size = item_size * pool_size;
-    if ((long long)pool_size <= 0 || total_size <= 0) {
+    if ((long long)item_size <= 0 || (long long)pool_size <= 0 ||
+        total_size <= 0) {
         errno = EINVAL;
         return NULL;
     }

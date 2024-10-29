@@ -73,8 +73,11 @@ int main(int argc, char **argv)
     assert(errno == EINVAL);
     printf("Done:\t✅\n");
 
-    printf("\nTest mempool_init(): Negative pool size\n");
+    printf("\nTest mempool_init(): Negative pool and item sizes\n");
     mempool = mempool_init(sizeof(test_case), -1);
+    assert(mempool == NULL);
+    assert(errno == EINVAL);
+    mempool = mempool_init(-1, 10);
     assert(mempool == NULL);
     assert(errno == EINVAL);
     printf("Done:\t✅\n");
