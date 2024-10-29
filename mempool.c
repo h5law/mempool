@@ -78,6 +78,17 @@ void *mempool_push(MEMPOOL *pool, uint64_t item_size)
         errno = -1;
         return NULL;
     }
+    if (item_size != (pool->space / pool->slots)) {
+        // Mismatched item_sizes from init
+        errno = -2;
+        return NULL;
+    }
+    size_t remaining_space = pool->space - pool->used;
+    if (remaining_space % item_size != 0) {
+        // Remaining space has incorrect size
+        errno = -3;
+        return NULL;
+    }
 
     uintptr_t nextOffset;
     if (pool->used >= pool->space || pool->used + item_size > pool->space) {
@@ -89,13 +100,6 @@ void *mempool_push(MEMPOOL *pool, uint64_t item_size)
         nextOffset = (uintptr_t)pool->next + item_size;
         pool->used = pool->used + item_size;
     }
-
-    /*size_t remaining_space = pool->space - pool->used;*/
-    /*if (remaining_space % item_size != 0) {*/
-    /*    // Remaining space has incorrect size*/
-    /*    errno = -4;*/
-    /*    return NULL;*/
-    /*}*/
 
     /*printf("Alloc: \t%lu\tSize: \t%llu\tUsed: \t%llu\tIndex: \t%llu\n",*/
     /*       (uintptr_t)nextOffset, pool->space, pool->used, pool->index);*/
@@ -111,4 +115,4 @@ void mempool_free(MEMPOOL *pool)
     free(pool); // Free entire allocated block
 }
 
-// vim: ts=4 sts=4 sw=4 et cin
+// vim: ft=c ts=4 sts=4 sw=4 et cin

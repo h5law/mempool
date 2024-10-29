@@ -66,4 +66,4 @@ void mempool_free(MEMPOOL *pool);
 
 #endif // !LIB_MEMPOOL_CIRC
 
-// vim: ts=4 sts=4 sw=4 et cin
+// vim: ft=c ts=4 sts=4 sw=4 et cin

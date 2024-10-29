@@ -44,6 +44,7 @@ struct _TC {
 struct _TC2 {
     char *ppp;
     int ddd;
+    int eee;
     test_case tc;
 } typedef test_case_wrapper;
 
@@ -57,7 +58,7 @@ int main(int argc, char **argv)
 
     MEMPOOL *mempool = NULL;
 
-    printf("Test mempool_init()\n");
+    printf("Test mempool_init(): Default\n");
     mempool = mempool_init(sizeof(test_case), tc.pool_size);
     assert(mempool->used == 0);
     assert(mempool->space == tc.pool_size * sizeof(test_case));
@@ -125,20 +126,34 @@ int main(int argc, char **argv)
     mempool_free(mempool);
     printf("Done:\t✅\n");
 
-    /*printf("\nTest mempool_push(): Remainder mismatch\n");*/
-    /*mempool = NULL;*/
-    /*mempool = mempool_init(sizeof(test_case), tc.pool_size);*/
-    /*for (int i = 0; i < tc.pool_size - 1; ++i) {*/
-    /*    assert(mempool_push(mempool, sizeof(tc)) != NULL);*/
-    /*}*/
-    /*assert(mempool_push(mempool, sizeof(tc)) != NULL);*/
-    /*assert((uintptr_t)mempool->next ==*/
-    /*       (uintptr_t)&mempool[1] + sizeof(test_case));*/
-    /*assert(mempool->index == 1);*/
+    printf("\nTest mempool_push(): Mismatched item_size\n");
+    mempool = NULL;
+    mempool = mempool_init(sizeof(test_case), tc.pool_size);
+    for (int i = 0; i < tc.pool_size - 1; ++i) {
+        assert(mempool_push(mempool, sizeof(tc)) != NULL);
+    }
+    assert(mempool_push(mempool, sizeof(test_case_wrapper)) == NULL);
+    assert(errno == -2);
+    assert(mempool->index == tc.pool_size - 1);
     /*printf("Pool: \t%lu\tData: \t%lu\n", (uintptr_t)mempool,*/
-    /*(uintptr_t)mempool->next);*/
-    /*mempool_free(mempool);*/
-    /*printf("Done:\t✅\n");*/
+    /*       (uintptr_t)mempool->next);*/
+    mempool_free(mempool);
+    printf("Done:\t✅\n");
+
+    printf("\nTest mempool_push(): Remainder mismatch\n");
+    mempool = NULL;
+    mempool = mempool_init(sizeof(test_case), tc.pool_size);
+    for (int i = 0; i < tc.pool_size - 1; ++i) {
+        assert(mempool_push(mempool, sizeof(tc)) != NULL);
+    }
+    mempool->used += 1; // Hack to trigger -3 failure
+    assert(mempool_push(mempool, sizeof(test_case)) == NULL);
+    assert(errno == -3);
+    assert(mempool->index == tc.pool_size - 1);
+    /*printf("Pool: \t%lu\tData: \t%lu\n", (uintptr_t)mempool,*/
+    /*       (uintptr_t)mempool->next);*/
+    mempool_free(mempool);
+    printf("Done:\t✅\n");
 }
 
-// vim: ts=4 sts=4 sw=4 et cin
+// vim: ft=c ts=4 sts=4 sw=4 et cin
